@@ -54,6 +54,9 @@ class Request(Base):
     member_id = Column(Integer, ForeignKey("members.member_id"))
     item_id = Column(Integer, ForeignKey("items.item_id"))
     request_date = Column(Date, server_default=func.current_date())
+    start_date = Column(Date)
+    end_date = Column(Date)
+    purpose = Column(String)
     status = Column(Enum("pending", "approved", "rejected", name="request_status"), default="pending")
 
     # Relationships
