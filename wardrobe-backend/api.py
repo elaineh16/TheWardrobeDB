@@ -52,21 +52,31 @@ def get_all_items(
         query = query.filter(Item.status == status)
     
     items = query.all()
+
+    result = []
+    for item in items:
+        current_rental = next(
+            (r for r in item.rentals if r.status == "checked_out"), None
+        )
+
+        result.append(
+            {
+                "id": item.item_id,
+                "name": item.name,
+                "category": item.category,
+                "size": item.size,
+                "color": item.color,
+                "brand": item.brand,
+                "status": item.status,
+                "image_url": item.image_url,
+                "rental_end_date": str(current_rental.expected_return_date)
+                if current_rental and current_rental.expected_return_date
+                else None,
+            }
+        )
+
     session.close()
-    
-    return [
-        {
-            "id": i.item_id,
-            "name": i.name,
-            "category": i.category,
-            "size": i.size,
-            "color": i.color,
-            "brand": i.brand,
-            "status": i.status,
-            "image_url": i.image_url,
-        }
-        for i in items
-    ]
+    return result
 
 
 @app.get("/items/{item_id}")
@@ -74,10 +84,16 @@ def get_item(item_id: int):
     """Get a single item by ID"""
     session = get_session()
     item = session.query(Item).get(item_id)
-    session.close()
     
     if not item:
+        session.close()
         raise HTTPException(status_code=404, detail="Item not found")
+    
+    current_rental = next(
+        (r for r in item.rentals if r.status == "checked_out"), None
+    )
+    
+    session.close()
     
     return {
         "id": item.item_id,
@@ -88,6 +104,9 @@ def get_item(item_id: int):
         "brand": item.brand,
         "status": item.status,
         "image_url": item.image_url,
+        "rental_end_date": str(current_rental.expected_return_date)
+        if current_rental and current_rental.expected_return_date
+        else None,
     }
 
 
